@@ -195,3 +195,12 @@ the main display, shown but not saved. The rules live in
 `BinPlacementResolver`, separate from the windows, so they can be tested
 against any arrangement. 1.1.15 also removes, once, the layouts that wakes
 had saved.
+
+That alone did not stop the shifting, because macOS moves windows too: while
+displays reconnect, and again afterwards when it restores window positions it
+remembers, sometimes after the app's last display notification. Since 1.1.16
+the app watches each panel's window, and a move or resize the user didn't make
+puts the panel back where it was saved (logged, never saved). It also places
+panels again on wake and 1.5, 5 and 15 seconds after a display change. A click
+on a panel that isn't a drag no longer saves its position, which used to make
+a displaced panel's spot permanent.

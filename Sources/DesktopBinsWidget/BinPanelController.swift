@@ -6,7 +6,10 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     private var windows: [UUID: BinPanelWindow] = [:]
     private var expandedHeights: [UUID: Double] = [:]
     private var gestureStartFrame: NSRect?
-    private var screenSettleWorkItem: DispatchWorkItem?
+    private var gestureDidDrag = false
+    private var screenSettleWorkItems: [DispatchWorkItem] = []
+    private var strayMoveWorkItem: DispatchWorkItem?
+    private var strayMoveRestores = 0
     private(set) var isVisible = true
 
     private var minWidth: CGFloat { CGFloat(SettingsStore.shared.minPanelWidth) }
@@ -26,12 +29,20 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
+        // Displays can come back after the last screen-parameters change of a
+        // wake has already been handled, so a wake gets its own placement pass.
+        let workspace = NSWorkspace.shared.notificationCenter
+        workspace.addObserver(self, selector: #selector(screenConfigurationChanged),
+                              name: NSWorkspace.didWakeNotification, object: nil)
+        workspace.addObserver(self, selector: #selector(screenConfigurationChanged),
+                              name: NSWorkspace.screensDidWakeNotification, object: nil)
         adoptCurrentDisplayForUnpinnedBins()
         repairLegacyHiddenItems()
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
     }
 
     /// Display changes only move windows; they never save a position. Waking
@@ -39,15 +50,56 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     /// sets it passes through is what used to shift bins around their own
     /// screen. Positions are saved only when the user moves, resizes,
     /// collapses or gathers a bin. The burst of notifications is followed by
-    /// one more placement once it settles.
+    /// further placements once it settles.
     @objc private func screenConfigurationChanged() {
         syncWindows()
-        screenSettleWorkItem?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            self?.syncWindows()
+        screenSettleWorkItems.forEach { $0.cancel() }
+        screenSettleWorkItems = [1.5, 5, 15].map { delay in
+            let work = DispatchWorkItem { [weak self] in
+                self?.strayMoveRestores = 0
+                self?.syncWindows()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+            return work
         }
-        screenSettleWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: work)
+    }
+
+    /// A bin window moved or resized without the user dragging it. macOS
+    /// relocates windows while displays come and go, and after a wake it can
+    /// put them back where *it* remembers them — sometimes well after the last
+    /// display notification, so nothing re-placed the bin and it sat shifted.
+    /// The saved position is the truth: put the window back, once things are
+    /// quiet, and never save the stray frame.
+    @objc private func binWindowFrameChanged(_ note: Notification) {
+        guard let window = note.object as? BinPanelWindow,
+              windows.values.contains(where: { $0 === window }) else { return }
+        strayMoveWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.restoreStrayWindows() }
+        strayMoveWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+    }
+
+    private func restoreStrayWindows() {
+        // The user is mid-drag; their gesture decides where the bin goes.
+        guard gestureStartFrame == nil else { return }
+        for bin in store.bins {
+            guard let window = windows[bin.id] else { continue }
+            let expected = frameOf(bin)
+            let actual = window.frame
+            let off = abs(actual.minX - expected.minX) + abs(actual.minY - expected.minY)
+                + abs(actual.width - expected.width) + abs(actual.height - expected.height)
+            guard off > 1 else { continue }
+            // Something that keeps fighting back must not become a loop.
+            guard strayMoveRestores < 20 else {
+                NSLog("DesktopBinsWidget: \(bin.title) keeps being moved to \(NSStringFromRect(actual)); leaving it until displays change")
+                return
+            }
+            strayMoveRestores += 1
+            NSLog("DesktopBinsWidget: \(bin.title) was moved to \(NSStringFromRect(actual)) without a drag; restoring \(NSStringFromRect(expected)) (displays: \(DisplaySnapshot.signature(of: DisplaySnapshot.current())))")
+            window.setFrame(expected, display: true)
+            window.contentView?.frame = NSRect(origin: .zero, size: expected.size)
+            window.contentView?.needsDisplay = true
+        }
     }
 
     // MARK: - Windows
@@ -55,6 +107,7 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     func syncWindows() {
         let currentIDs = Set(store.bins.map(\.id))
         for (id, window) in windows where !currentIDs.contains(id) {
+            NotificationCenter.default.removeObserver(self, name: nil, object: window)
             window.close()
             windows.removeValue(forKey: id)
         }
@@ -84,6 +137,11 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         view.delegate = self
         view.frame = NSRect(origin: .zero, size: frame.size)
         window.contentView = view
+        for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(binWindowFrameChanged(_:)), name: name, object: window
+            )
+        }
         return window
     }
 
@@ -369,11 +427,13 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
 
     func panelDidBeginGesture(_ view: BinPanelView, kind: BinPanelView.GestureKind) {
         gestureStartFrame = windows[view.bin.id]?.frame
+        gestureDidDrag = false
     }
 
     func panel(_ view: BinPanelView, didDragBy delta: CGSize, kind: BinPanelView.GestureKind) {
         guard let window = windows[view.bin.id] else { return }
         let frame = window.frame
+        if delta != .zero { gestureDidDrag = true }
 
         switch kind {
         case .move:
@@ -392,6 +452,13 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
 
     func panelDidEndGesture(_ view: BinPanelView) {
         gestureStartFrame = nil
+        // A click on the title bar or an empty spot is not a move. Saving here
+        // anyway would make permanent wherever macOS had left the window.
+        guard gestureDidDrag else {
+            restoreStrayWindows()
+            return
+        }
+        gestureDidDrag = false
         guard var bin = store.bin(for: view.bin.id), let window = windows[bin.id] else { return }
         pinToDisplay(&bin, frame: window.frame)
         commit(bin)
