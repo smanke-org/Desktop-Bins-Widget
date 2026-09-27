@@ -182,3 +182,16 @@ Each panel also remembers a separate arrangement per monitor setup, keyed by
 a signature of the attached displays. Moving between a desk, a second desk
 and the bare laptop restores whatever layout was last used with each, rather
 than keeping a single position that the previous setup overwrites.
+
+A layout is saved only when the user moves, resizes, collapses or gathers a
+panel — never because the displays changed. Waking from sleep reconnects
+monitors one at a time, and before 1.1.15 the app saved a layout for each
+partial set it passed through, using wherever the panel happened to be at
+that instant. Those showed up as panels shifting around their own screen
+after sleep. Placement now works in this order: the layout saved for exactly
+this set of monitors; otherwise wherever the user last put the panel on its
+own display, which keeps it still while other monitors come and go; otherwise
+the main display, shown but not saved. The rules live in
+`BinPlacementResolver`, separate from the windows, so they can be tested
+against any arrangement. 1.1.15 also removes, once, the layouts that wakes
+had saved.

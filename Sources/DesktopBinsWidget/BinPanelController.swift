@@ -17,6 +17,7 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         super.init()
         store.onChange = { [weak self] in self?.syncWindows() }
         SettingsStore.shared.onChange = { [weak self] in self?.redrawAll() }
+        pruneWakeTransientLayoutsOnce()
         syncWindows()
 
         NotificationCenter.default.addObserver(
@@ -26,7 +27,6 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
             object: nil
         )
         adoptCurrentDisplayForUnpinnedBins()
-        recordLayoutForCurrentConfigurationIfNew()
         repairLegacyHiddenItems()
     }
 
@@ -34,15 +34,17 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         NotificationCenter.default.removeObserver(self)
     }
 
-    /// Display changes arrive as a burst of notifications, so the response is
-    /// coalesced before the new arrangement is recorded.
+    /// Display changes only move windows; they never save a position. Waking
+    /// from sleep reconnects monitors one at a time, and saving the partial
+    /// sets it passes through is what used to shift bins around their own
+    /// screen. Positions are saved only when the user moves, resizes,
+    /// collapses or gathers a bin. The burst of notifications is followed by
+    /// one more placement once it settles.
     @objc private func screenConfigurationChanged() {
         syncWindows()
         screenSettleWorkItem?.cancel()
         let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            self.syncWindows()
-            self.recordLayoutForCurrentConfigurationIfNew()
+            self?.syncWindows()
         }
         screenSettleWorkItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: work)
@@ -103,58 +105,14 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
 
     // MARK: - Display placement
 
-    /// A panel whose display is absent is shown on the main display rather
-    /// than vanishing — plugging into a different set of monitors should not
-    /// look like the panels were lost. Its stored pin is left alone so it
-    /// returns home when its own display comes back; it is only re-pinned if
-    /// the user actually moves it.
+    /// Where a bin belongs right now. The rules live in `BinPlacementResolver`
+    /// so they can be tested against any monitor arrangement.
     private func frameOf(_ bin: Bin) -> NSRect {
-        // A layout remembered for this exact set of monitors wins, so
-        // returning to a previous setup restores that arrangement.
-        let signature = DisplayIdentity.configurationSignature()
-        if let placement = bin.layouts[signature],
-           let screen = DisplayIdentity.screen(withUUID: placement.displayUUID) {
-            return NSRect(
-                x: screen.frame.origin.x + CGFloat(placement.relativeX),
-                y: screen.frame.origin.y + CGFloat(placement.relativeY),
-                width: placement.width,
-                height: placement.height
-            )
-        }
-
-        if let uuid = bin.displayUUID, let screen = DisplayIdentity.screen(withUUID: uuid) {
-            return NSRect(
-                x: screen.frame.origin.x + CGFloat(bin.relativeX ?? 0),
-                y: screen.frame.origin.y + CGFloat(bin.relativeY ?? 0),
-                width: bin.width,
-                height: bin.height
-            )
-        }
-
-        let stored = NSRect(x: bin.x, y: bin.y, width: bin.width, height: bin.height)
-        guard bin.displayUUID != nil, let fallback = mainScreen() else { return stored }
-
-        // Offsets from a bigger monitor can land far outside a laptop screen,
-        // so fit the panel to whatever display is actually available.
-        let relative = NSRect(
-            x: fallback.frame.origin.x + CGFloat(bin.relativeX ?? 0),
-            y: fallback.frame.origin.y + CGFloat(bin.relativeY ?? 0),
-            width: bin.width,
-            height: bin.height
-        )
-        return clamp(relative, into: fallback.visibleFrame)
+        BinPlacementResolver.frame(for: bin, displays: DisplaySnapshot.current())
     }
 
     private func mainScreen() -> NSScreen? {
         NSScreen.screens.first { $0.frame.origin == .zero } ?? NSScreen.main ?? NSScreen.screens.first
-    }
-
-    private func clamp(_ frame: NSRect, into bounds: NSRect) -> NSRect {
-        let width = min(frame.width, bounds.width)
-        let height = min(frame.height, bounds.height)
-        let x = min(max(frame.origin.x, bounds.minX), bounds.maxX - width)
-        let y = min(max(frame.origin.y, bounds.minY), bounds.maxY - height)
-        return NSRect(x: x, y: y, width: width, height: height)
     }
 
     /// Emergency escape hatch: gathers every panel onto the main display and
@@ -215,7 +173,7 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         bin.relativeY = Double(frame.origin.y - screen.frame.origin.y)
 
         // Remember this arrangement against the current set of monitors.
-        bin.layouts[DisplayIdentity.configurationSignature()] = BinPlacement(
+        bin.layouts[DisplaySnapshot.signature(of: DisplaySnapshot.current())] = BinPlacement(
             displayUUID: uuid,
             relativeX: Double(frame.origin.x - screen.frame.origin.x),
             relativeY: Double(frame.origin.y - screen.frame.origin.y),
@@ -224,16 +182,24 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         )
     }
 
-    /// Records where each bin ended up under a set of monitors we have not
-    /// seen before, so this arrangement becomes the one restored next time.
-    private func recordLayoutForCurrentConfigurationIfNew() {
-        let signature = DisplayIdentity.configurationSignature()
-        guard signature != "none" else { return }
-        for bin in store.bins where bin.layouts[signature] == nil {
-            var updated = bin
-            pinToDisplay(&updated, frame: frameOf(bin))
-            store.updateBin(updated)
+    private static let prunedWakeLayoutsKey = "prunedWakeTransientLayouts"
+
+    /// One-time cleanup of the positions versions before 1.1.15 saved while
+    /// monitors reconnected after sleep (see
+    /// `BinPlacementResolver.wakeTransientSignatures`). Runs once rather than
+    /// every launch: from now on a partial monitor set only gets a layout when
+    /// the user arranges a bin under it, and that must be kept.
+    private func pruneWakeTransientLayoutsOnce() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: Self.prunedWakeLayoutsKey) else { return }
+        for var bin in store.bins {
+            let stale = BinPlacementResolver.wakeTransientSignatures(in: bin)
+            guard !stale.isEmpty else { continue }
+            stale.forEach { bin.layouts.removeValue(forKey: $0) }
+            store.updateBin(bin)
+            NSLog("DesktopBinsWidget: removed \(stale.count) layout(s) saved during wake for \(bin.title)")
         }
+        defaults.set(true, forKey: Self.prunedWakeLayoutsKey)
     }
 
     private func adoptCurrentDisplayForUnpinnedBins() {
