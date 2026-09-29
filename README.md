@@ -47,7 +47,7 @@ both notarized, so it opens without a Gatekeeper warning.
 
 ## Icon
 
-`Tools/generate_icon.swift` draws the periodic-tile icon and writes two
+`Tools/generate_icon.swift` draws the periodic-tile icon — red with black lettering, the atomic number tipped 45° — and writes two
 variants: the full tile, and a nameless one with a larger symbol for the 16
 to 64pt sizes where the name would just be a smudge. Rebuild with:
 

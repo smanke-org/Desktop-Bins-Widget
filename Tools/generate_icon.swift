@@ -1,7 +1,8 @@
 #!/usr/bin/env swift
 // Generates the app icon: a periodic-table style element tile — atomic number
-// "26", the symbol "Db", and the name along the bottom. Matches the house
-// style set by M3 Tracker, in red.
+// "27", the symbol "Db", and the name along the bottom. Matches the house
+// style set by M3 Tracker, in red with black lettering. The atomic number is
+// tipped 45 degrees to the left.
 // Run with:
 //   swift Tools/generate_icon.swift
 //
@@ -69,7 +70,7 @@ ctx.restoreGState()
 func draw(_ string: String, size: CGFloat, at point: CGPoint) {
     let attributes: [NSAttributedString.Key: Any] = [
         .font: NSFont.systemFont(ofSize: size, weight: .bold),
-        .foregroundColor: NSColor.white,
+        .foregroundColor: NSColor.black,
     ]
     NSAttributedString(string: string, attributes: attributes).draw(at: point)
 }
@@ -85,11 +86,18 @@ func size(of string: String, size: CGFloat) -> NSSize {
 // once the name is gone.
 let numberSize = side * (includeName ? 0.115 : 0.135)
 let numberInset = side * 0.075
-let numberHeight = size(of: "26", size: numberSize).height
-draw("26", size: numberSize, at: CGPoint(
-    x: tile.minX + numberInset,
-    y: tile.maxY - numberInset - numberHeight
-))
+// Tipped 45 degrees to the left about its own centre, which stays where the
+// upright number's centre was.
+let numberRect = size(of: "27", size: numberSize)
+let numberCenter = CGPoint(
+    x: tile.minX + numberInset + numberRect.width / 2,
+    y: tile.maxY - numberInset - numberRect.height / 2
+)
+ctx.saveGState()
+ctx.translateBy(x: numberCenter.x, y: numberCenter.y)
+ctx.rotate(by: .pi / 4)
+draw("27", size: numberSize, at: CGPoint(x: -numberRect.width / 2, y: -numberRect.height / 2))
+ctx.restoreGState()
 
 // "Db" centred as the element symbol. Without the name below it, the symbol
 // grows and recentres to fill the tile.
