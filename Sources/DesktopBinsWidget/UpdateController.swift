@@ -14,7 +14,7 @@ import AppKit
 /// A failure at any step aborts the update and leaves the installed app
 /// untouched.
 enum UpdateController {
-    private static let repository = "smanke/Desktop-Bins-Widget"
+    private static let repository = "smanke-org/Desktop-Bins-Widget"
 
     enum UpdateOutcome {
         case upToDate(current: String)

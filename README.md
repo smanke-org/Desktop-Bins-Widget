@@ -41,7 +41,7 @@ layer — widget-like in feel, fully interactive in practice.
 
 ## Installing
 
-Download the `.dmg` from the [latest release](https://github.com/smanke/Desktop-Bins-Widget/releases),
+Download the `.dmg` from the [latest release](https://github.com/smanke-org/Desktop-Bins-Widget/releases),
 open it, and drag the app onto Applications. The image and the app inside are
 both notarized, so it opens without a Gatekeeper warning.
 
