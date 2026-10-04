@@ -38,6 +38,7 @@ layer — widget-like in feel, fully interactive in practice.
 - Updates itself from the menu bar, verifying the download before installing
 - Checks for a newer release at launch, silently unless there is one
 - Optional launch at login
+- Optional Dock icon (Settings › Show in Dock, off by default) whose right-click menu opens Settings
 
 ## Installing
 

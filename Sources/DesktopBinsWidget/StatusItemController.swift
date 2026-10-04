@@ -127,7 +127,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     @objc private func toggleVisibility() { panelController.setAllVisible(!panelController.isVisible) }
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
-    @objc private func showSettings() { settingsWindowController.show() }
+    @objc func showSettings() { settingsWindowController.show() }
     @objc private func quit() { NSApp.terminate(nil) }
 
     @objc private func setIconSize(_ sender: NSMenuItem) {

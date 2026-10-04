@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 
 /// User-tunable appearance and behaviour, persisted in UserDefaults.
 ///
@@ -56,6 +56,16 @@ final class SettingsStore: ObservableObject {
     /// Look for a newer release shortly after launch. Silent unless there is
     /// something to install, so it can't turn into a dialog on every launch.
     @Published var checkForUpdatesAtLaunch: Bool { didSet { save() } }
+
+    /// A Dock icon whose right-click menu opens Settings. Off by default.
+    @Published var showInDock: Bool = DockIcon.isShown {
+        didSet {
+            guard showInDock != DockIcon.isShown else { return }
+            DockIcon.isShown = showInDock
+            // Settings is the key window while its own toggle is clicked.
+            DockIcon.apply(keepInFront: NSApp.keyWindow)
+        }
+    }
 
     /// A version the user chose to skip. The launch check stays quiet about
     /// it; asking again on every launch would just be nagging. Checking

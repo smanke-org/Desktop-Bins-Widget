@@ -6,7 +6,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        // A menu bar app; it has a Dock icon only if the user turned one on.
+        NSApp.setActivationPolicy(DockIcon.isShown ? .regular : .accessory)
+        NSApp.mainMenu = DockIcon.mainMenu(appName: "Desktop Bins Widget", settingsTitle: "Settings…",
+                                           target: self, settings: #selector(showSettings))
 
         store = BinStore()
         panelController = BinPanelController(store: store)
@@ -27,6 +30,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             UpdateController.checkForUpdates(silent: true)
         }
+    }
+
+    /// The Dock icon's right-click menu, when "Show in Dock" is on.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        DockIcon.menu(title: "Settings…", target: self, action: #selector(showSettings))
+    }
+
+    /// Clicking the Dock icon opens Settings. Always, not only when no window
+    /// is visible: the bins themselves are windows and are usually on screen.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showSettings()
+        return true
+    }
+
+    @objc func showSettings() {
+        statusItemController.showSettings()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
