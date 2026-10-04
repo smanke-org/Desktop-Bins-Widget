@@ -38,7 +38,7 @@ layer — widget-like in feel, fully interactive in practice.
 - Updates itself from the menu bar, verifying the download before installing
 - Checks for a newer release at launch, silently unless there is one
 - Optional launch at login
-- Optional Dock icon (Settings › Show in Dock, off by default) whose right-click menu opens Settings
+- Choose where the app appears: Dock, menu bar, both or neither (Settings › General). The Dock icon's right-click menu opens Settings; with both off, open the app again from Applications to reach Settings
 
 ## Installing
 

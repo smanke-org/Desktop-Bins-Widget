@@ -10,7 +10,14 @@ struct SettingsView: View {
                 Toggle("Check for updates when the app opens", isOn: $settings.checkForUpdatesAtLaunch)
                     .help("Looks for a newer release on GitHub a few seconds after launch. You are only asked if there is one.")
                 Toggle("Show in Dock", isOn: $settings.showInDock)
-                    .help("Adds a Dock icon whose right-click menu opens Settings. Desktop Bins Widget stays in the menu bar either way.")
+                    .help("Adds a Dock icon whose right-click menu opens Settings.")
+                Toggle("Show in menu bar", isOn: $settings.showInMenuBar)
+                if !settings.showInDock && !settings.showInMenuBar {
+                    Text(AppPresence.hiddenEverywhereNote(appName: "Desktop Bins Widget", settingsName: "Settings"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Divider()

@@ -58,12 +58,20 @@ final class SettingsStore: ObservableObject {
     @Published var checkForUpdatesAtLaunch: Bool { didSet { save() } }
 
     /// A Dock icon whose right-click menu opens Settings. Off by default.
-    @Published var showInDock: Bool = DockIcon.isShown {
+    @Published var showInDock: Bool = AppPresence.showInDock {
         didSet {
-            guard showInDock != DockIcon.isShown else { return }
-            DockIcon.isShown = showInDock
+            guard showInDock != AppPresence.showInDock else { return }
+            AppPresence.showInDock = showInDock
             // Settings is the key window while its own toggle is clicked.
-            DockIcon.apply(keepInFront: NSApp.keyWindow)
+            AppPresence.applyDock(keepInFront: NSApp.keyWindow)
+        }
+    }
+
+    /// The menu bar icon. On by default; may be off together with the Dock icon.
+    @Published var showInMenuBar: Bool = AppPresence.showInMenuBar {
+        didSet {
+            guard showInMenuBar != AppPresence.showInMenuBar else { return }
+            AppPresence.showInMenuBar = showInMenuBar
         }
     }
 

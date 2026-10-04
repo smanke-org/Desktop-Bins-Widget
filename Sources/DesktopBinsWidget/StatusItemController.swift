@@ -30,6 +30,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
+
+        // Settings can hide the menu bar icon (the app then lives in the Dock, or nowhere).
+        statusItem.isVisible = AppPresence.showInMenuBar
+        NotificationCenter.default.addObserver(forName: AppPresence.menuBarDidChange, object: nil,
+                                               queue: .main) { [weak self] _ in
+            self?.statusItem.isVisible = AppPresence.showInMenuBar
+        }
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

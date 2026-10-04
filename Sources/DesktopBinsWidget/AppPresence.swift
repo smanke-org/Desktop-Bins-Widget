@@ -1,23 +1,44 @@
 import AppKit
 
-/// An optional Dock icon, so Settings can be reached by right-clicking it.
+/// Where the app shows itself: a Dock icon, a menu bar icon, both, or neither.
 ///
-/// Off by default: this is a menu bar app, and it stays in the menu bar either
-/// way. macOS only shows an app's own Dock-menu items while the app is running
-/// with a Dock icon, which is why this is a setting rather than always there.
-enum DockIcon {
-    private static let key = "showInDock"
+/// The menu bar icon is on and the Dock icon off by default, which is how the
+/// app has always looked. With the Dock icon on, right-clicking it offers the
+/// settings window (macOS only shows an app's own Dock-menu items while it is
+/// running with a Dock icon). With both off the app runs with no icon at all;
+/// opening it again from Applications or Spotlight brings up its settings.
+enum AppPresence {
+    /// Posted when `showInMenuBar` changes, for the status item to follow.
+    static let menuBarDidChange = Notification.Name("AppPresence.menuBarDidChange")
 
-    static var isShown: Bool {
-        get { UserDefaults.standard.bool(forKey: key) }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
+    private enum Key {
+        static let dock = "showInDock"
+        static let menuBar = "showInMenuBar"
     }
 
-    /// Sets the activation policy to match the setting. `keepInFront` is a
-    /// window to keep visible when the icon goes away (the settings window
-    /// the setting was changed from), since leaving the Dock deactivates the app.
-    static func apply(keepInFront window: NSWindow? = nil) {
-        if isShown {
+    static var showInDock: Bool {
+        get { UserDefaults.standard.bool(forKey: Key.dock) }
+        set { UserDefaults.standard.set(newValue, forKey: Key.dock) }
+    }
+
+    static var showInMenuBar: Bool {
+        get { UserDefaults.standard.object(forKey: Key.menuBar) as? Bool ?? true }
+        set {
+            UserDefaults.standard.set(newValue, forKey: Key.menuBar)
+            NotificationCenter.default.post(name: menuBarDidChange, object: nil)
+        }
+    }
+
+    /// Shown under the two checkboxes while both are off.
+    static func hiddenEverywhereNote(appName: String, settingsName: String) -> String {
+        "\(appName) will keep running with no icon. To get back here, open it again from Applications or Spotlight; that opens \(settingsName)."
+    }
+
+    /// Sets the activation policy to match `showInDock`. `keepInFront` is a
+    /// window to keep visible when the Dock icon goes away (the settings window
+    /// the change was made from), since leaving the Dock deactivates the app.
+    static func applyDock(keepInFront window: NSWindow? = nil) {
+        if showInDock {
             NSApp.setActivationPolicy(.regular)
         } else {
             // Going back to .accessory while the app is active doesn't take if
@@ -34,7 +55,7 @@ enum DockIcon {
     }
 
     /// The Dock icon's right-click menu: one item that opens the settings window.
-    static func menu(title: String, target: AnyObject, action: Selector) -> NSMenu {
+    static func dockMenu(title: String, target: AnyObject, action: Selector) -> NSMenu {
         let menu = NSMenu()
         let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
         item.target = target
