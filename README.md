@@ -1,22 +1,31 @@
 # Desktop Bins Widget
 
-A macOS menu bar app that puts widget-style panels on the desktop. Each
-panel is a titled, resizable container that holds files and folders you drag
-into it, laid out on its own icon grid.
+**Tidy desktop panels that hold your files and folders, so your Mac's desktop stops being a pile.**
 
-Companion to — and a different product from — Desktop Bins. That app
-arranges Finder's real desktop icons; this one owns its contents.
+The macOS desktop turns into clutter fast. Downloads, screenshots, project folders and
+shortcuts pile up until you can't find anything, and macOS's own Stacks only sort by kind or
+date. Desktop Bins Widget puts titled, resizable panels on your desktop. Drag files and folders
+into a panel, arrange them however you like, and open them with a double-click. Each set of
+monitors keeps its own arrangement, so the panels stay put when you dock, undock or wake
+from sleep.
 
-## Why not a WidgetKit widget
+---
 
-A literal WidgetKit desktop widget cannot do this. Widgets run in a
-sandboxed extension: they cannot send Apple Events, cannot be a drag-and-drop
-destination, come only in fixed system sizes placed from the widget gallery,
-and are limited to buttons and toggles for interaction. A widget could
-*display* a bin's contents, but never hold, accept or arrange them.
+## ⬇️ Download
 
-These panels are therefore ordinary app windows pinned to the desktop
-layer — widget-like in feel, fully interactive in practice.
+<p align="center">
+  <a href="https://github.com/smanke-org/Desktop-Bins-Widget/releases/latest/download/DesktopBinsWidget.dmg">
+    <img src="https://img.shields.io/badge/Download-DesktopBinsWidget.dmg-2ea44f?style=for-the-badge&logo=apple&logoColor=white" alt="Download DesktopBinsWidget.dmg" height="48">
+  </a>
+</p>
+
+1. **[Download DesktopBinsWidget.dmg](https://github.com/smanke-org/Desktop-Bins-Widget/releases/latest/download/DesktopBinsWidget.dmg)**
+2. Open it and drag **Desktop Bins Widget** to **Applications**.
+3. Open it from Applications, choose **New Bin** from the menu bar icon, and drag files into the bin.
+
+No permissions to grant. Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
+
+---
 
 ## Features
 
@@ -40,24 +49,28 @@ layer — widget-like in feel, fully interactive in practice.
 - Optional launch at login
 - Choose where the app appears: Dock, menu bar, both or neither (Settings › General). The Dock icon's right-click menu opens Settings; with both off, open the app again from Applications to reach Settings
 
-## Installing
+A companion to, and a different product from, the discontinued Desktop Bins. That app
+arranged Finder's real desktop icons; this one owns its contents.
 
-Download the `.dmg` from the [latest release](https://github.com/smanke-org/Desktop-Bins-Widget/releases),
-open it, and drag the app onto Applications. The image and the app inside are
-both notarized, so it opens without a Gatekeeper warning.
+## Why not a WidgetKit widget
 
-## Icon
+A literal WidgetKit desktop widget cannot do this. Widgets run in a
+sandboxed extension: they cannot send Apple Events, cannot be a drag-and-drop
+destination, come only in fixed system sizes placed from the widget gallery,
+and are limited to buttons and toggles for interaction. A widget could
+*display* a bin's contents, but never hold, accept or arrange them.
 
-`Tools/generate_icon.swift` draws the periodic-tile icon — red with black lettering, the atomic number tipped 45° — and writes two
-variants: the full tile, and a nameless one with a larger symbol for the 16
-to 64pt sizes where the name would just be a smudge. Rebuild with:
+These panels are therefore ordinary app windows pinned to the desktop
+layer — widget-like in feel, fully interactive in practice.
 
-```bash
-swift Tools/generate_icon.swift
-```
+## Updates
 
-then regenerate `Resources/AppIcon.icns` from `Resources/AppIcon.iconset`
-with `iconutil -c icns`.
+Desktop Bins Widget checks GitHub for a new release a few seconds after launch, and stays
+silent unless there is one. You can also choose **Check for Updates…** from the menu bar at
+any time. Nothing installs until you confirm it, and "Skip This Version" stops the launch check
+offering that version again. Before installing, the download must be signed by the same
+developer and notarized by Apple. See [Updating](#updating) below for how the update is
+installed.
 
 ## Building
 
@@ -79,6 +92,19 @@ on the right. That layout ships as a captured `.DS_Store` (`Resources/dmg/DS_Sto
 during a release; recapture it with `Tools/capture_dmg_layout.sh` if the window changes.
 There is no background picture: on macOS 27 Finder shows one only while it is dropped into
 the View Options picture well by hand and discards it when the window closes.
+
+## Icon
+
+`Tools/generate_icon.swift` draws the periodic-tile icon — red with black lettering, the atomic number tipped 45° — and writes two
+variants: the full tile, and a nameless one with a larger symbol for the 16
+to 64pt sizes where the name would just be a smudge. Rebuild with:
+
+```bash
+swift Tools/generate_icon.swift
+```
+
+then regenerate `Resources/AppIcon.icns` from `Resources/AppIcon.iconset`
+with `iconutil -c icns`.
 
 ## Implementation notes
 
