@@ -22,6 +22,9 @@ UNIVERSAL_BIN="${BIN_DIR}/DesktopBinsWidget"
 # no-op incremental build writes it again and passes the check below.
 BUILD_STARTED=$(mktemp)
 trap 'rm -f "${BUILD_STARTED}"' EXIT
+# The check below compares whole seconds, and a no-op build can finish within
+# the second the marker was made; step past it so a fresh binary always reads newer.
+sleep 1
 rm -f "${UNIVERSAL_BIN}"
 
 echo "Building universal release binary (arm64 + x86_64)..."
