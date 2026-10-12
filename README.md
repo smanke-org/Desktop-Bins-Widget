@@ -65,12 +65,26 @@ layer — widget-like in feel, fully interactive in practice.
 
 ## Updates
 
-Desktop Bins Widget checks GitHub for a new release a few seconds after launch, and stays
-silent unless there is one. You can also choose **Check for Updates…** from the menu bar at
-any time. Nothing installs until you confirm it, and "Skip This Version" stops the launch check
-offering that version again. Before installing, the download must be signed by the same
+Desktop Bins Widget checks GitHub for a new release a few seconds after launch and every 30
+minutes. Settings › iCloud and updates decides what happens when it finds one:
+
+- **Ask me first** (the default): a notification and an "Update to …" menu item; nothing
+  installs until you confirm it, and "Skip This Version" stops the background check offering
+  that version again.
+- **Install automatically**: the update is downloaded and checked right away, then installed
+  once no app is presenting or keeping the display awake and the Mac hasn't been used for
+  2 minutes.
+- **Don't check**: **Check for Updates…** in the menu bar still works. Before installing, the download must be signed by the same
 developer and notarized by Apple. See [Updating](#updating) below for how the update is
 installed.
+
+## Settings sync
+
+Turn on "Sync settings with your other Macs" in Settings and icon size, panel opacity,
+labels, how bins move and where the app appears follow you to every Mac on the same iCloud
+account, through `iCloud Drive/Desktop Bins Widget/Settings.plist`. Your bins, their files and
+layouts, and whether Desktop files move into bins, stay on each Mac. A brand-new install
+that finds this file turns sync on and starts from your settings.
 
 ## Building
 
@@ -168,12 +182,11 @@ belonging to someone else is refused), and pass Gatekeeper assessment, which
 only succeeds if Apple notarized it. Any failure aborts and leaves the
 installed app untouched.
 
-The same check runs a few seconds after launch when "Check for Updates at
-Launch" is on, deliberately silent unless there is something to offer —
-reporting "up to date", or a failed network call, on every single launch
-would be noise rather than information. Declining an update offers "Skip This
-Version", which stops the launch check raising that version again; checking
-manually still offers it.
+The background check (at launch and every 30 minutes) is silent unless there is
+something to offer. With "Install automatically" chosen, it downloads and verifies
+the update itself and installs it only while the Mac is idle and nothing is being
+presented. Declining an update offers "Skip This Version", which stops the
+background check raising that version again; checking manually still offers it.
 
 The swap itself is handed to a detached shell script, because an app cannot
 replace and relaunch its own bundle while it is the one running: the script

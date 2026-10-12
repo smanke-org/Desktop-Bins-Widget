@@ -6,6 +6,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Before anything saves a setting: an empty domain means a brand-new install.
+        let newInstall = SettingsSync.domainIsEmpty()
         // A menu bar app; it has a Dock icon only if the user turned one on.
         NSApp.setActivationPolicy(AppPresence.showInDock ? .regular : .accessory)
         NSApp.mainMenu = AppPresence.mainMenu(appName: "Desktop Bins Widget", settingsTitle: "Settings…",
@@ -19,17 +21,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panelController.addBinAtCenterOfMainScreen()
         }
 
-        scheduleLaunchUpdateCheck()
-    }
-
-    /// Looks for a newer release shortly after launch rather than during it,
-    /// so startup isn't waiting on the network. Silent unless there is
-    /// something to offer.
-    private func scheduleLaunchUpdateCheck() {
-        guard SettingsStore.shared.checkForUpdatesAtLaunch else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            UpdateController.checkForUpdates(silent: true)
-        }
+        SettingsSync.shared.onApply = { SettingsStore.shared.reload() }
+        if newInstall { SettingsSync.shared.adoptOnNewInstall() }
+        SettingsSync.shared.start()
+        AutoUpdater.shared.start()
     }
 
     /// The Dock icon's right-click menu, when "Show in Dock" is on.

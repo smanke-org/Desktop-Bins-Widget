@@ -123,6 +123,23 @@ final class SettingsStore: ObservableObject {
     var cellWidth: Double { iconSize + 36 }
     var cellHeight: Double { iconSize + (showLabels ? Double(WidgetMetrics.labelHeight) : 8) + 12 }
 
+    /// Re-reads the synced settings after another Mac's were adopted.
+    func reload() {
+        // Read everything before assigning anything: each assignment's save() writes every
+        // property, so assigning one at a time would overwrite the rest with old values.
+        let defaults = UserDefaults.standard
+        let newIconSize = defaults.double(forKey: Key.iconSize)
+        let newShowLabels = defaults.bool(forKey: Key.showLabels)
+        let newOpacity = defaults.double(forKey: Key.panelOpacity)
+        let newRequiresCommand = defaults.bool(forKey: Key.requiresCommandToMove)
+        iconSize = newIconSize
+        showLabels = newShowLabels
+        panelOpacity = newOpacity
+        requiresCommandToMove = newRequiresCommand
+        if showInDock != AppPresence.showInDock { showInDock = AppPresence.showInDock }
+        if showInMenuBar != AppPresence.showInMenuBar { showInMenuBar = AppPresence.showInMenuBar }
+    }
+
     func resetToDefaults() {
         iconSize = Self.defaultIconSize
         showLabels = true

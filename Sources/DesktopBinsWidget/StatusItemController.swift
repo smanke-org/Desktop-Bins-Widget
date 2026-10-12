@@ -54,7 +54,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         // App. A release found by the launch check is offered here rather than
         // prompted for, so an install only ever follows a click the user made.
-        if let pending = UpdateAvailability.shared.pending {
+        if let staged = AutoUpdater.shared.staged {
+            menu.addItem(withTitle: "Update to \(staged.version) Now", action: #selector(installStagedUpdate), keyEquivalent: "", target: self)
+        } else if let pending = UpdateAvailability.shared.pending {
             let updateItem = menu.addItem(withTitle: "Update to \(pending)…", action: #selector(checkForUpdates), keyEquivalent: "", target: self)
             updateItem.toolTip = "A newer release is available. Downloading and installing it needs your confirmation."
         } else {
@@ -133,6 +135,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     @objc private func toggleVisibility() { panelController.setAllVisible(!panelController.isVisible) }
+    @MainActor @objc private func installStagedUpdate() { AutoUpdater.shared.installNow() }
+
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
     @objc func showSettings() { settingsWindowController.show() }
     @objc private func quit() { NSApp.terminate(nil) }
