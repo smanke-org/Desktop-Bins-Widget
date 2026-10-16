@@ -64,6 +64,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             updateItem.toolTip = "Download and install the latest release from GitHub, then restart."
         }
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",", target: self)
+        menu.addItem(withTitle: "About Desktop Bins Widget", action: #selector(showAbout), keyEquivalent: "", target: self)
+        menu.addItem(withTitle: "Our other apps…", action: #selector(showOtherApps), keyEquivalent: "", target: self)
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Desktop Bins Widget", action: #selector(quit), keyEquivalent: "q", target: self)
 
@@ -140,6 +142,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
     @objc func showSettings() { settingsWindowController.show() }
     @objc private func quit() { NSApp.terminate(nil) }
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
+    }
+    /// The developer's site, which lists every app.
+    @objc private func showOtherApps() {
+        if let url = URL(string: "https://stevemanke.com/") { NSWorkspace.shared.open(url) }
+    }
 
     @objc private func setIconSize(_ sender: NSMenuItem) {
         guard let value = sender.representedObject as? Double else { return }
