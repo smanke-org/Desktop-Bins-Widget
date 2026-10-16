@@ -10,8 +10,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let newInstall = SettingsSync.domainIsEmpty()
         // A menu bar app; it has a Dock icon only if the user turned one on.
         NSApp.setActivationPolicy(AppPresence.showInDock ? .regular : .accessory)
-        NSApp.mainMenu = AppPresence.mainMenu(appName: "Desktop Bins Widget", settingsTitle: "Settings…",
-                                           target: self, settings: #selector(showSettings))
+        let mainMenu = AppPresence.mainMenu(appName: "Desktop Bins Widget", settingsTitle: "Settings…",
+                                            target: self, settings: #selector(showSettings))
+        // Right below About in the app menu.
+        let otherApps = NSMenuItem(title: "Our other apps…", action: #selector(showOtherApps), keyEquivalent: "")
+        otherApps.target = self
+        mainMenu.items.first?.submenu?.insertItem(otherApps, at: 1)
+        NSApp.mainMenu = mainMenu
 
         store = BinStore()
         panelController = BinPanelController(store: store)
@@ -43,6 +48,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func showSettings() {
         statusItemController.showSettings()
+    }
+
+    /// The developer's site, which lists every app.
+    @objc func showOtherApps() {
+        if let url = URL(string: "https://stevemanke.com/") { NSWorkspace.shared.open(url) }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
