@@ -47,6 +47,7 @@ No permissions to grant. Requires macOS 13 or later. Signed with Developer ID an
 - Updates itself from the menu bar, verifying the download before installing
 - Checks for a newer release at launch, silently unless there is one
 - Optional launch at login
+- URLs for ToolHUD, Shortcuts or scripts: `desktopbins://new-bin`, `desktopbins://toggle` (show or hide every bin) and `desktopbins://folder`
 - Choose where the app appears: Dock, menu bar, both or neither (Settings › General). The Dock icon's right-click menu opens Settings; with both off, open the app again from Applications to reach Settings
 
 A companion to, and a different product from, the discontinued Desktop Bins. That app

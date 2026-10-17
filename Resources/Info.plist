@@ -16,6 +16,17 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.1.24</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Desktop Bins Widget</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>desktopbins</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>1.1.24</string>
 	<key>LSMinimumSystemVersion</key>
@@ -24,5 +35,44 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Personal use</string>
+	<key>ToolHUDActions</key>
+	<array>
+		<dict>
+			<key>activates</key>
+			<false/>
+			<key>id</key>
+			<string>new-bin</string>
+			<key>shortTitle</key>
+			<string>New bin</string>
+			<key>symbol</key>
+			<string>plus.rectangle.on.rectangle</string>
+			<key>title</key>
+			<string>New bin</string>
+		</dict>
+		<dict>
+			<key>activates</key>
+			<false/>
+			<key>id</key>
+			<string>toggle</string>
+			<key>shortTitle</key>
+			<string>Show/hide bins</string>
+			<key>symbol</key>
+			<string>eye.slash</string>
+			<key>title</key>
+			<string>Show or hide all bins</string>
+		</dict>
+		<dict>
+			<key>activates</key>
+			<true/>
+			<key>id</key>
+			<string>folder</string>
+			<key>shortTitle</key>
+			<string>Bins folder</string>
+			<key>symbol</key>
+			<string>folder</string>
+			<key>title</key>
+			<string>Show the Desktop Bins folder</string>
+		</dict>
+	</array>
 </dict>
 </plist>
