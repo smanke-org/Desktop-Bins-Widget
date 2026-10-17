@@ -66,8 +66,7 @@ layer — widget-like in feel, fully interactive in practice.
 
 ## Updates
 
-Desktop Bins Widget checks GitHub for a new release a few seconds after launch and every 30
-minutes. Settings › iCloud and updates decides what happens when it finds one:
+Desktop Bins Widget checks GitHub for a new release once a day, or as often as you choose in Settings (a number of hours, days, weeks or months). Settings › iCloud and updates decides what happens when it finds one:
 
 - **Ask me first** (the default): a notification and an "Update to …" menu item; nothing
   installs until you confirm it, and "Skip This Version" stops the background check offering
@@ -183,7 +182,7 @@ belonging to someone else is refused), and pass Gatekeeper assessment, which
 only succeeds if Apple notarized it. Any failure aborts and leaves the
 installed app untouched.
 
-The background check (at launch and every 30 minutes) is silent unless there is
+The background check (once a day unless you choose another interval) is silent unless there is
 something to offer. With "Install automatically" chosen, it downloads and verifies
 the update itself and installs it only while the Mac is idle and nothing is being
 presented. Declining an update offers "Skip This Version", which stops the
