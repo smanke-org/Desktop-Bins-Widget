@@ -56,4 +56,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// `desktopbins://new-bin`, `toggle` (show or hide every bin) and `folder` (from ToolHUD,
+    /// Shortcuts or a script) do what the menu items do; anything else opens Settings.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "desktopbins" {
+            switch url.host {
+            case "new-bin": panelController.addBinAtCenterOfMainScreen()
+            case "toggle": panelController.setAllVisible(!panelController.isVisible)
+            case "folder":
+                let folder = LocalBinFolder.url
+                try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                NSWorkspace.shared.activateFileViewerSelecting([folder])
+            default: showSettings()
+            }
+        }
+    }
 }
