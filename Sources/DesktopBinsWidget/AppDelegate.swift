@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let newInstall = SettingsSync.domainIsEmpty()
         // A menu bar app; it has a Dock icon only if the user turned one on.
         NSApp.setActivationPolicy(AppPresence.showInDock ? .regular : .accessory)
+        AppAppearance.start()
         let mainMenu = AppPresence.mainMenu(appName: "Desktop Bins Widget", settingsTitle: "Settings…",
                                             target: self, settings: #selector(showSettings))
         // Right below About in the app menu.

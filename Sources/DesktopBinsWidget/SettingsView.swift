@@ -6,6 +6,10 @@ struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             section("General") {
+                AppearancePicker()
+                    .fixedSize()
+                caption(AppAppearance.footer(appName: "Desktop Bins Widget"))
+                    .padding(.bottom, 4)
                 Toggle("Open Desktop Bins Widget at login", isOn: $settings.launchAtLogin)
                 Toggle("Show in Dock", isOn: $settings.showInDock)
                     .help("Adds a Dock icon whose right-click menu opens Settings.")
@@ -26,7 +30,7 @@ struct SettingsView: View {
 
             Divider()
 
-            section("Appearance") {
+            section("Bins") {
                 slider(label: "Icon size", value: $settings.iconSize, range: 24...96, step: 8, suffix: "pt")
                 slider(label: "Panel opacity", value: $settings.panelOpacity, range: 0.3...1.0, step: 0.05, suffix: "")
                 Toggle("Show file names under icons", isOn: $settings.showLabels)
