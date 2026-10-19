@@ -63,6 +63,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             let updateItem = menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "", target: self)
             updateItem.toolTip = "Download and install the latest release from GitHub, then restart."
         }
+        menu.addItem(withTitle: "Desktop Bins Widget Help", action: #selector(showHelp), keyEquivalent: "", target: self)
+            .image = NSImage(systemSymbolName: "questionmark.circle", accessibilityDescription: nil)
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",", target: self)
         menu.addItem(withTitle: "About Desktop Bins Widget", action: #selector(showAbout), keyEquivalent: "", target: self)
         menu.addItem(withTitle: "Our other apps…", action: #selector(showOtherApps), keyEquivalent: "", target: self)
@@ -140,6 +142,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @MainActor @objc private func installStagedUpdate() { AutoUpdater.shared.installNow() }
 
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
+    @MainActor @objc func showHelp() { HelpWindow.shared.show() }
     @objc func showSettings() { settingsWindowController.show() }
     @objc private func quit() { NSApp.terminate(nil) }
     @objc private func showAbout() {

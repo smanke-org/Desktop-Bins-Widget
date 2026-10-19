@@ -61,6 +61,8 @@ struct SettingsView: View {
                 Text("Desktop Bins Widget \(AppInfo.displayVersion)")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                // The round Help button in the corner, as macOS does.
+                HelpButton(topic: "getting-started").fixedSize()
             }
         }
         .padding(20)
