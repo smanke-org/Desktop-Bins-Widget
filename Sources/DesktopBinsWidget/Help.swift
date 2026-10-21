@@ -50,6 +50,7 @@ enum Help {
                 ("Double-click an item", "Open it"),
             ]),
             .tip("Items flow in the order you arrange them, so a bin never has gaps."),
+            .tip("While ToolHUD is running, Desktop Bins Widget's menu moves into ToolHUD's menu bar menu as a submenu, and the icon here steps aside until ToolHUD quits. To keep the icon, turn off \"Put in ToolHUD's menu while ToolHUD is running\" in Settings."),
         ]),
 
         HelpTopic(id: "bins", title: "Working with Bins", symbol: "square.grid.2x2", blocks: [

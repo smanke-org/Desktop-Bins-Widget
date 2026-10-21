@@ -31,11 +31,19 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.delegate = self
         statusItem.menu = menu
 
-        // Settings can hide the menu bar icon (the app then lives in the Dock, or nowhere).
-        statusItem.isVisible = AppPresence.showInMenuBar
+        // Settings can hide the menu bar icon (the app then lives in the Dock, or nowhere),
+        // and ToolHUD can take the menu into its own while it runs.
+        MainActor.assumeIsolated { statusItem.isVisible = MenuHub.shared.showsOwnIcon }
         NotificationCenter.default.addObserver(forName: AppPresence.menuBarDidChange, object: nil,
                                                queue: .main) { [weak self] _ in
-            self?.statusItem.isVisible = AppPresence.showInMenuBar
+            MainActor.assumeIsolated { self?.statusItem.isVisible = MenuHub.shared.showsOwnIcon }
+        }
+        MainActor.assumeIsolated {
+            MenuHub.shared.start(menu: { [weak self] in
+                let menu = NSMenu()
+                self?.menuNeedsUpdate(menu)
+                return menu
+            }, icon: { [weak self] in self?.statusItem.button?.image })
         }
     }
 

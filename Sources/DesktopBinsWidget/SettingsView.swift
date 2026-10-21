@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: SettingsStore
+    @ObservedObject private var hub = MenuHub.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -14,6 +15,8 @@ struct SettingsView: View {
                 Toggle("Show in Dock", isOn: $settings.showInDock)
                     .help("Adds a Dock icon whose right-click menu opens Settings.")
                 Toggle("Show in menu bar", isOn: $settings.showInMenuBar)
+                Toggle("Put in ToolHUD’s menu while ToolHUD is running", isOn: $hub.foldIntoToolHUD)
+                    .help("ToolHUD shows this menu as a submenu of its own, and Desktop Bins Widget’s icon leaves the menu bar until ToolHUD quits.")
                 if !settings.showInDock && !settings.showInMenuBar {
                     Text(AppPresence.hiddenEverywhereNote(appName: "Desktop Bins Widget", settingsName: "Settings"))
                         .font(.caption)
