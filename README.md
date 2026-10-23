@@ -244,3 +244,7 @@ puts the panel back where it was saved (logged, never saved). It also places
 panels again on wake and 1.5, 5 and 15 seconds after a display change. A click
 on a panel that isn't a drag no longer saves its position, which used to make
 a displaced panel's spot permanent.
+
+## License
+
+© 2026 Steve Manke. All rights reserved.
