@@ -76,9 +76,15 @@ else
     -volname "${APP_NAME}" \
     -srcfolder "${STAGING}" \
     -fs HFS+ \
-    -format UDZO \
+    -format ULFO \
     -ov \
     "${DMG_PATH}" >/dev/null
+fi
+# A corrupt image (hdiutil's zlib images of HFS+ volumes are on macOS 27.0.1) is never
+# signed or published.
+if ! hdiutil imageinfo "${DMG_PATH}" 2>/dev/null | grep -q "Format Description"; then
+  echo "The disk image came out unreadable; not signing or publishing it." >&2
+  exit 1
 fi
 
 if [ -n "${SIGN_IDENTITY}" ]; then
