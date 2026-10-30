@@ -40,7 +40,8 @@ final class SettingsSync: ObservableObject {
         "iconSize",
         "panelOpacity",
         "showLabels",
-        "requiresCommandToMove", UpdatePolicy.key, UpdateInterval.valueKey, UpdateInterval.unitKey,
+        "requiresCommandToMove",
+        "confirmQuit", UpdatePolicy.key, UpdateInterval.valueKey, UpdateInterval.unitKey,
     ]
 
     /// What each setting is when this Mac has never changed it, for settings without a

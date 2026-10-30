@@ -25,7 +25,7 @@ struct SyncUpdateControls: View {
                 }
                 .font(.caption)
             }
-            Text("Icon size, panel opacity, labels, how bins move and where the app appears follow you to every Mac signed in to the same iCloud account with sync turned on. Your bins and their files stay on each Mac.")
+            Text("Icon size, panel opacity, labels, how bins move, asking before quitting and where the app appears follow you to every Mac signed in to the same iCloud account with sync turned on. Your bins and their files stay on each Mac.")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 

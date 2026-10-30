@@ -51,6 +51,7 @@ enum Help {
             ]),
             .tip("Items flow in the order you arrange them, so a bin never has gaps."),
             .tip("While ToolHUD is running, Desktop Bins Widget's menu moves into ToolHUD's menu bar menu as a submenu, and the icon here steps aside until ToolHUD quits. To keep the icon, turn off \"Put in ToolHUD's menu while ToolHUD is running\" in Settings."),
+            .tip("Quitting asks first, since your bins leave the desktop while Desktop Bins Widget is closed. Turn off \"Ask before quitting\" in Settings › General, or tick \"Don't ask again\" when it asks."),
         ]),
 
         HelpTopic(id: "bins", title: "Working with Bins", symbol: "square.grid.2x2", blocks: [

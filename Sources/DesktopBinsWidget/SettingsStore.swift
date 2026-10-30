@@ -16,6 +16,7 @@ final class SettingsStore: ObservableObject {
         /// Pre-1.1.8 setting, read once so the choice carries over.
         static let legacyHideDesktopIcons = "hideDesktopIcons"
         static let requiresCommandToMove = "requiresCommandToMove"
+        static let confirmQuit = "confirmQuit"
         static let checkForUpdatesAtLaunch = "checkForUpdatesAtLaunch"
         static let skippedUpdateVersion = "skippedUpdateVersion"
     }
@@ -52,6 +53,9 @@ final class SettingsStore: ObservableObject {
     /// what stops bins being nudged by accident. The stored name says what
     /// the flag actually does, since the label reads the other way round.
     @Published var requiresCommandToMove: Bool { didSet { save() } }
+
+    /// Quitting asks first, so a stray ⌘Q doesn't take the bins off the desktop.
+    @Published var confirmQuit: Bool { didSet { save() } }
 
     /// Look for a newer release shortly after launch. Silent unless there is
     /// something to install, so it can't turn into a dialog on every launch.
@@ -91,6 +95,7 @@ final class SettingsStore: ObservableObject {
             Key.panelOpacity: Self.defaultOpacity,
             Key.moveDesktopFiles: defaults.object(forKey: Key.legacyHideDesktopIcons) as? Bool ?? true,
             Key.requiresCommandToMove: true,
+            Key.confirmQuit: true,
             Key.checkForUpdatesAtLaunch: true
         ])
         launchAtLogin = LaunchAtLoginController.isEnabled
@@ -99,6 +104,7 @@ final class SettingsStore: ObservableObject {
         panelOpacity = defaults.double(forKey: Key.panelOpacity)
         moveDesktopFiles = defaults.bool(forKey: Key.moveDesktopFiles)
         requiresCommandToMove = defaults.bool(forKey: Key.requiresCommandToMove)
+        confirmQuit = defaults.bool(forKey: Key.confirmQuit)
         checkForUpdatesAtLaunch = defaults.bool(forKey: Key.checkForUpdatesAtLaunch)
     }
 
@@ -109,6 +115,7 @@ final class SettingsStore: ObservableObject {
         defaults.set(panelOpacity, forKey: Key.panelOpacity)
         defaults.set(moveDesktopFiles, forKey: Key.moveDesktopFiles)
         defaults.set(requiresCommandToMove, forKey: Key.requiresCommandToMove)
+        defaults.set(confirmQuit, forKey: Key.confirmQuit)
         defaults.set(checkForUpdatesAtLaunch, forKey: Key.checkForUpdatesAtLaunch)
     }
 
@@ -132,10 +139,12 @@ final class SettingsStore: ObservableObject {
         let newShowLabels = defaults.bool(forKey: Key.showLabels)
         let newOpacity = defaults.double(forKey: Key.panelOpacity)
         let newRequiresCommand = defaults.bool(forKey: Key.requiresCommandToMove)
+        let newConfirmQuit = defaults.bool(forKey: Key.confirmQuit)
         iconSize = newIconSize
         showLabels = newShowLabels
         panelOpacity = newOpacity
         requiresCommandToMove = newRequiresCommand
+        confirmQuit = newConfirmQuit
         if showInDock != AppPresence.showInDock { showInDock = AppPresence.showInDock }
         if showInMenuBar != AppPresence.showInMenuBar { showInMenuBar = AppPresence.showInMenuBar }
     }
@@ -146,6 +155,7 @@ final class SettingsStore: ObservableObject {
         panelOpacity = Self.defaultOpacity
         moveDesktopFiles = true
         requiresCommandToMove = true
+        confirmQuit = true
         checkForUpdatesAtLaunch = true
     }
 }

@@ -12,6 +12,8 @@ struct SettingsView: View {
                 caption(AppAppearance.footer(appName: "Desktop Bins Widget"))
                     .padding(.bottom, 4)
                 Toggle("Open Desktop Bins Widget at login", isOn: $settings.launchAtLogin)
+                Toggle("Ask before quitting", isOn: $settings.confirmQuit)
+                    .help("Quitting Desktop Bins Widget asks first, so a stray ⌘Q doesn't take your bins off the desktop.")
                 Toggle("Show in Dock", isOn: $settings.showInDock)
                     .help("Adds a Dock icon whose right-click menu opens Settings.")
                 Toggle("Show in menu bar", isOn: $settings.showInMenuBar)
