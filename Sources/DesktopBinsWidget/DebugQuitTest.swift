@@ -10,7 +10,7 @@ import AppKit
 @MainActor
 enum DebugQuitTest {
     private static var lines: [String] = []
-    private static let settingsWindow = SettingsWindowController()
+    private static let settingsWindow = SettingsWindowController.shared
 
     static func run(_ how: String) {
         if how == "settings" { return snapshotSettings() }

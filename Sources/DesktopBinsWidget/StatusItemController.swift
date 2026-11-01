@@ -9,7 +9,6 @@ import AppKit
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let panelController: BinPanelController
-    private let settingsWindowController = SettingsWindowController()
 
     private static let iconSizes: [(String, Double)] = [
         ("Small Icons", 32),
@@ -151,7 +150,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
     @MainActor @objc func showHelp() { HelpWindow.shared.show() }
-    @objc func showSettings() { settingsWindowController.show() }
+    /// Always called on the main thread (menu items, the app delegate).
+    @objc func showSettings() { MainActor.assumeIsolated { SettingsWindowController.shared.show() } }
     @objc private func quit() { NSApp.terminate(nil) }
     @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)

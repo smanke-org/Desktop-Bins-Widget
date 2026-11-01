@@ -3,6 +3,8 @@ import Foundation
 /// Version details read from the bundle, so the number shown in Settings
 /// always matches what was actually built rather than a hardcoded copy.
 enum AppInfo {
+    static let name = "Desktop Bins Widget"
+
     static var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
     }

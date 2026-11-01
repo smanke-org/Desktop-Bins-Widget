@@ -50,6 +50,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DebugQuitTest.run(how)
             return
         }
+        // The update prompt, What's New and Settings drawn to PNGs; starts nothing else.
+        if let folder = ProcessInfo.processInfo.environment["DESKTOPBINS_DEBUG_UPDATE_NOTES"] {
+            DebugUpdateNotes.run(folder: folder)
+            return
+        }
         #endif
         store = BinStore()
         panelController = BinPanelController(store: store)
@@ -62,7 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SettingsSync.shared.onApply = { SettingsStore.shared.reload() }
         if newInstall { SettingsSync.shared.adoptOnNewInstall() }
         SettingsSync.shared.start()
-        AutoUpdater.shared.start()
+        AutoUpdater.shared.start(newInstall: newInstall)
     }
 
     /// Quitting asks first, while "Ask before quitting" is on in Settings › General. Not when

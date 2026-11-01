@@ -71,7 +71,7 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 430)
+        .frame(minWidth: SettingsWindowController.width, maxWidth: .infinity)
         .fixedSize(horizontal: false, vertical: true)
     }
 
