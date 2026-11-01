@@ -9,6 +9,8 @@ into a panel, arrange them however you like, and open them with a double-click. 
 monitors keeps its own arrangement, so the panels stay put when you dock, undock or wake
 from sleep.
 
+<p align="center"><img src="docs/images/desktopbinswidget-scene.jpg" width="800" alt="Three Desktop Bins Widget panels on a Mac desktop, Work in Progress, Finance and Design Assets, each holding sample files and folders"></p>
+
 ---
 
 ## ⬇️ Download
@@ -52,6 +54,15 @@ No permissions to grant. Requires macOS 13 or later. Signed with Developer ID an
 
 A companion to, and a different product from, the discontinued Desktop Bins. That app
 arranged Finder's real desktop icons; this one owns its contents.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/desktopbinswidget-closeup.jpg" alt="A panel titled Work in Progress with an item count of 6, holding a folder, a Keynote file, a Word document, a Pages file, an Excel file and a text file"><br><sub><b>A bin.</b> Files and folders in a titled panel; resize it from the corner.</sub></td>
+<td width="50%" align="center"><img src="docs/images/desktopbinswidget-menu.png" width="320" alt="The Desktop Bins Widget menu with its Tools submenu open, showing Bring All Bins to Main Display, Remove Missing Items, Show Desktop Bins Folder and Return All Files to Desktop"><br><sub><b>The menu.</b> New bins, plus tools to gather panels and return files.</sub></td>
+</tr>
+</table>
 
 ## Why not a WidgetKit widget
 
