@@ -47,8 +47,11 @@ No permissions to grant. Requires macOS 13 or later. Signed with Developer ID an
 - Item count in the title bar can be turned off per bin
 - Optional Command-drag to move, so bins can't be nudged by accident
 - Updates itself from the menu bar, verifying the download before installing
+- The update window shows the notes for the latest releases, marking the ones you don't
+  have yet; What's New… in Settings shows them any time
 - Checks for a newer release at launch, silently unless there is one
 - Optional launch at login
+- Settings can be dragged bigger and keeps the size you choose
 - URLs for ToolHUD, Shortcuts or scripts: `desktopbins://new-bin`, `desktopbins://toggle` (show or hide every bin) and `desktopbins://folder`
 - Choose where the app appears: Dock, menu bar, both or neither (Settings › General). The Dock icon's right-click menu opens Settings; with both off, open the app again from Applications to reach Settings
 
@@ -80,8 +83,8 @@ layer — widget-like in feel, fully interactive in practice.
 Desktop Bins Widget checks GitHub for a new release once a day, or as often as you choose in Settings (a number of hours, days, weeks or months). Settings › iCloud and updates decides what happens when it finds one:
 
 - **Ask me first** (the default): a notification and an "Update to …" menu item; nothing
-  installs until you confirm it, and "Skip This Version" stops the background check offering
-  that version again.
+  installs until you confirm it, and "Don't remind me about this version" (ticked to begin
+  with) stops the background check offering that version again.
 - **Install automatically**: the update is downloaded and checked right away, then installed
   once no app is presenting or keeping the display awake and the Mac hasn't been used for
   2 minutes.
@@ -196,8 +199,8 @@ installed app untouched.
 The background check (once a day unless you choose another interval) is silent unless there is
 something to offer. With "Install automatically" chosen, it downloads and verifies
 the update itself and installs it only while the Mac is idle and nothing is being
-presented. Declining an update offers "Skip This Version", which stops the
-background check raising that version again; checking manually still offers it.
+presented. Declining an update with "Don't remind me about this version" ticked
+stops the background check raising that version again; checking manually still offers it.
 
 The swap itself is handed to a detached shell script, because an app cannot
 replace and relaunch its own bundle while it is the one running: the script
