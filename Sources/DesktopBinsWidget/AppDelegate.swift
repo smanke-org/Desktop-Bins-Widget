@@ -17,6 +17,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // A test run of the agent CLI (APP_STORE): its own bins, folders and settings, and the
+        // agent socket. Nothing else starts: no panels on screen, menu bar item, Dock icon,
+        // ToolHUD menu hub, settings sync or updater.
+        if AgentSocket.isTestRun {
+            NSApp.setActivationPolicy(.prohibited)
+            store = BinStore()
+            panelController = BinPanelController(store: store, showsWindows: false)
+            AgentApp.store = store
+            AgentApp.panels = panelController
+            AgentSocket.listen { AgentRouter.handle($0) }
+            return
+        }
+        #endif
         // Before anything saves a setting: an empty domain means a brand-new install.
         let newInstall = SettingsSync.domainIsEmpty()
         // A menu bar app; it has a Dock icon only if the user turned one on.
@@ -63,6 +77,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if store.bins.isEmpty {
             panelController.addBinAtCenterOfMainScreen()
         }
+        // `bins` and the MCP server talk to the app through this.
+        AgentApp.store = store
+        AgentApp.panels = panelController
+        AgentSocket.listen { AgentRouter.handle($0) }
 
         SettingsSync.shared.onApply = { SettingsStore.shared.reload() }
         if newInstall { SettingsSync.shared.adoptOnNewInstall() }
@@ -120,7 +138,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor @objc func showHelp() { HelpWindow.shared.show() }
 
     @objc func showSettings() {
-        statusItemController.showSettings()
+        // Optional: an agent CLI test copy has no menu bar item and no Settings.
+        statusItemController?.showSettings()
     }
 
     /// The developer's site, which lists every app.

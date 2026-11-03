@@ -9,12 +9,21 @@ import Foundation
 /// computers see the file leave their Desktop, and nothing more.
 enum LocalBinFolder {
     static var url: URL {
-        FileManager.default.homeDirectoryForCurrentUser
+        // An agent CLI test copy (Debug builds only) never touches the real folder.
+        if let test = AgentSocket.testFolder { return test.appendingPathComponent("Desktop Bins", isDirectory: true) }
+        return FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Desktop Bins", isDirectory: true)
     }
 
     static var desktop: URL? {
-        FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
+        // A test copy gets a stand-in Desktop inside its APP_STORE folder, so files it puts
+        // back "on the Desktop" never land on the real one.
+        if let test = AgentSocket.testFolder {
+            let desktop = test.appendingPathComponent("Desktop", isDirectory: true)
+            try? FileManager.default.createDirectory(at: desktop, withIntermediateDirectories: true)
+            return desktop
+        }
+        return FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
     }
 
     /// True for items sitting directly on the Desktop. Items from anywhere

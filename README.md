@@ -92,6 +92,33 @@ Desktop Bins Widget checks GitHub for a new release once a day, or as often as y
 developer and notarized by Apple. See [Updating](#updating) below for how the update is
 installed.
 
+## Command line and AI agents
+
+Desktop Bins Widget is also a command line tool, so scripts and AI agents (Claude Code, Codex) can
+list your bins and what they hold, add files to a bin, take items out, reorder and open them, and
+make, rename, color, collapse, show, hide and delete bins. Commands run in the open app, and the
+bins on the desktop change at once. Link it once to type `bins`:
+
+```bash
+ln -s "/Applications/Desktop Bins Widget.app/Contents/MacOS/DesktopBinsWidget" ~/.local/bin/bins
+```
+
+```bash
+bins help
+bins list --json
+bins items add ~/Documents/report.pdf --bin Work
+bins items remove 3f2a9c1e --yes
+```
+
+Every command takes `--json`. Removing an item, deleting a bin and the other big changes only show
+what they would do until you add `--yes`, and no command deletes a file: a file a bin moved off the
+Desktop goes back there. For MCP apps such as Claude Desktop, the same commands are served by
+`"/Applications/Desktop Bins Widget.app/Contents/MacOS/DesktopBinsWidget" mcp`:
+
+```bash
+claude mcp add --scope user bins -- "/Applications/Desktop Bins Widget.app/Contents/MacOS/DesktopBinsWidget" mcp
+```
+
 ## Settings sync
 
 Turn on "Sync settings with your other Macs" in Settings and icon size, panel opacity,

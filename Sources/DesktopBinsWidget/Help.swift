@@ -96,6 +96,15 @@ enum Help {
                 ("desktopbins://folder", "Open the Desktop Bins folder"),
             ]),
             .text("Use these links from Shortcuts, scripts or a launcher. ToolHUD's Desktop Bins Widget buttons use them."),
+            .heading("Command line and AI agents"),
+            .text("Desktop Bins Widget is also a command line tool, so scripts and AI agents such as Claude Code or Codex can list your bins and what they hold, add files to a bin, take items out, reorder and open them, and make, rename, color, collapse, show, hide and delete bins. Commands run in the open app, and the bins on the desktop change at once. Removing an item, deleting a bin and the other big changes need --yes, and no command deletes a file."),
+            .keys([
+                ("bins help", "List every command and its options"),
+                ("bins list", "Show your bins, with how many items each holds"),
+                ("bins items add <file> --bin Work", "Put a file in a bin, as dropping it there does"),
+                ("bins mcp", "Offer the same commands to MCP apps, such as Claude Desktop"),
+            ]),
+            .text("To type bins in Terminal, link it once: ln -s \"/Applications/Desktop Bins Widget.app/Contents/MacOS/DesktopBinsWidget\" ~/.local/bin/bins (with ~/.local/bin on your PATH). MCP apps take the full path to that program, followed by mcp."),
         ]),
 
         HelpTopic(id: "updates", title: "Updates", symbol: "arrow.down.circle", blocks: [

@@ -21,6 +21,13 @@ final class SettingsStore: ObservableObject {
         static let skippedUpdateVersion = "skippedUpdateVersion"
     }
 
+    /// Where these settings live: the app's own defaults, or, in an agent CLI test copy
+    /// (Debug builds only), a domain of its own so tests never change the real settings.
+    static let defaults: UserDefaults = AgentSocket.isTestRun
+        ? UserDefaults(suiteName: agentTestSuite) ?? .standard
+        : .standard
+    static let agentTestSuite = "com.smanke.DesktopBinsWidget.agenttest"
+
     static let defaultIconSize: Double = 48
     static let defaultOpacity: Double = 0.9
 
@@ -83,12 +90,12 @@ final class SettingsStore: ObservableObject {
     /// it; asking again on every launch would just be nagging. Checking
     /// manually still offers it.
     var skippedUpdateVersion: String? {
-        get { UserDefaults.standard.string(forKey: Key.skippedUpdateVersion) }
-        set { UserDefaults.standard.set(newValue, forKey: Key.skippedUpdateVersion) }
+        get { Self.defaults.string(forKey: Key.skippedUpdateVersion) }
+        set { Self.defaults.set(newValue, forKey: Key.skippedUpdateVersion) }
     }
 
     private init() {
-        let defaults = UserDefaults.standard
+        let defaults = Self.defaults
         defaults.register(defaults: [
             Key.iconSize: Self.defaultIconSize,
             Key.showLabels: true,
@@ -109,7 +116,7 @@ final class SettingsStore: ObservableObject {
     }
 
     private func save() {
-        let defaults = UserDefaults.standard
+        let defaults = Self.defaults
         defaults.set(iconSize, forKey: Key.iconSize)
         defaults.set(showLabels, forKey: Key.showLabels)
         defaults.set(panelOpacity, forKey: Key.panelOpacity)
@@ -134,7 +141,7 @@ final class SettingsStore: ObservableObject {
     func reload() {
         // Read everything before assigning anything: each assignment's save() writes every
         // property, so assigning one at a time would overwrite the rest with old values.
-        let defaults = UserDefaults.standard
+        let defaults = Self.defaults
         let newIconSize = defaults.double(forKey: Key.iconSize)
         let newShowLabels = defaults.bool(forKey: Key.showLabels)
         let newOpacity = defaults.double(forKey: Key.panelOpacity)

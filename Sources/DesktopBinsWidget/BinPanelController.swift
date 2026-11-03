@@ -11,17 +11,22 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     private var strayMoveWorkItem: DispatchWorkItem?
     private var strayMoveRestores = 0
     private(set) var isVisible = true
+    /// False in an agent CLI test copy: it keeps its bins as data only and never puts a
+    /// panel on screen.
+    private let showsWindows: Bool
 
     private var minWidth: CGFloat { CGFloat(SettingsStore.shared.minPanelWidth) }
     private var minHeight: CGFloat { CGFloat(SettingsStore.shared.minPanelHeight) }
 
-    init(store: BinStore) {
+    init(store: BinStore, showsWindows: Bool = true) {
         self.store = store
+        self.showsWindows = showsWindows
         super.init()
         store.onChange = { [weak self] in self?.syncWindows() }
         SettingsStore.shared.onChange = { [weak self] in self?.redrawAll() }
         pruneWakeTransientLayoutsOnce()
         syncWindows()
+        guard showsWindows else { return }
 
         NotificationCenter.default.addObserver(
             self,
@@ -105,6 +110,7 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     // MARK: - Windows
 
     func syncWindows() {
+        guard showsWindows else { return }
         let currentIDs = Set(store.bins.map(\.id))
         for (id, window) in windows where !currentIDs.contains(id) {
             NotificationCenter.default.removeObserver(self, name: nil, object: window)
@@ -165,6 +171,11 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
 
     /// Where a bin belongs right now. The rules live in `BinPlacementResolver`
     /// so they can be tested against any monitor arrangement.
+    /// Where a bin's panel is (or would be) on screen right now.
+    func frame(ofBin id: UUID) -> NSRect? {
+        store.bin(for: id).map(frameOf)
+    }
+
     private func frameOf(_ bin: Bin) -> NSRect {
         BinPlacementResolver.frame(for: bin, displays: DisplaySnapshot.current())
     }
@@ -248,7 +259,7 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     /// every launch: from now on a partial monitor set only gets a layout when
     /// the user arranges a bin under it, and that must be kept.
     private func pruneWakeTransientLayoutsOnce() {
-        let defaults = UserDefaults.standard
+        let defaults = SettingsStore.defaults
         guard !defaults.bool(forKey: Self.prunedWakeLayoutsKey) else { return }
         for var bin in store.bins {
             let stale = BinPlacementResolver.wakeTransientSignatures(in: bin)
@@ -269,7 +280,9 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
 
     // MARK: - Bin lifecycle
 
-    func addBinAtCenterOfMainScreen() {
+    /// Returns the new bin's id.
+    @discardableResult
+    func addBinAtCenterOfMainScreen() -> UUID {
         let visible = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let size = NSSize(width: 320, height: 260)
         let frame = NSRect(
@@ -289,6 +302,7 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         )
         pinToDisplay(&bin, frame: frame)
         store.addBin(bin)
+        return bin.id
     }
 
     func setAllVisible(_ visible: Bool) {
@@ -465,8 +479,15 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     }
 
     func panelRequestsToggleCollapse(_ view: BinPanelView) {
-        guard var bin = store.bin(for: view.bin.id), let window = windows[bin.id] else { return }
-        let frame = window.frame
+        toggleCollapse(view.bin.id)
+    }
+
+    /// Collapses a bin to its title bar, or expands it again.
+    func toggleCollapse(_ id: UUID) {
+        guard var bin = store.bin(for: id) else { return }
+        let window = windows[bin.id]
+        guard window != nil || !showsWindows else { return }
+        let frame = window?.frame ?? frameOf(bin)
         bin.isCollapsed.toggle()
 
         let newHeight: CGFloat
@@ -479,13 +500,26 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
 
         let newFrame = NSRect(x: frame.minX, y: frame.maxY - newHeight, width: frame.width, height: newHeight)
         pinToDisplay(&bin, frame: newFrame)
-        window.setFrame(newFrame, display: true)
-        window.contentView?.frame = NSRect(origin: .zero, size: newFrame.size)
+        window?.setFrame(newFrame, display: true)
+        window?.contentView?.frame = NSRect(origin: .zero, size: newFrame.size)
         commit(bin)
     }
 
     func panel(_ view: BinPanelView, didDropURLs urls: [URL], atIndex index: Int) {
-        guard var bin = store.bin(for: view.bin.id) else { return }
+        let failed = addItems(urls, toBin: view.bin.id, at: index).failed
+        if !failed.isEmpty {
+            presentMoveFailure("Couldn't move some items off the Desktop",
+                               names: failed + ["", "They were added to the bin but are still on the Desktop."])
+        }
+    }
+
+    /// Puts files in a bin at `index`, as dropping them on it does: files already in the bin
+    /// are skipped, and Desktop files move into the Desktop Bins folder when Settings says so.
+    /// Returns the new items and the names of files that couldn't be moved off the Desktop
+    /// (they were added anyway, as plain references).
+    @discardableResult
+    func addItems(_ urls: [URL], toBin id: UUID, at index: Int) -> (added: [BinItem], failed: [String]) {
+        guard var bin = store.bin(for: id) else { return ([], []) }
         // Ignore anything already held, so dropping twice doesn't duplicate.
         let existing = Set(bin.items.map(\.path))
         var newItems: [BinItem] = []
@@ -498,20 +532,21 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
                 failed.append(url.lastPathComponent)
             }
         }
-        guard !newItems.isEmpty else { return }
+        guard !newItems.isEmpty else { return ([], []) }
 
         let insertAt = min(max(index, 0), bin.items.count)
         bin.items.insert(contentsOf: newItems, at: insertAt)
         commit(bin)
-
-        if !failed.isEmpty {
-            presentMoveFailure("Couldn't move some items off the Desktop",
-                               names: failed + ["", "They were added to the bin but are still on the Desktop."])
-        }
+        return (newItems, failed)
     }
 
     func panel(_ view: BinPanelView, didReorderFrom oldIndex: Int, to newIndex: Int) {
-        guard var bin = store.bin(for: view.bin.id),
+        moveItem(inBin: view.bin.id, from: oldIndex, to: newIndex)
+    }
+
+    /// Moves an item to another place in its bin, as dragging it there does.
+    func moveItem(inBin id: UUID, from oldIndex: Int, to newIndex: Int) {
+        guard var bin = store.bin(for: id),
               bin.items.indices.contains(oldIndex) else { return }
         let item = bin.items.remove(at: oldIndex)
         bin.items.insert(item, at: min(max(newIndex, 0), bin.items.count))
@@ -520,11 +555,19 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
 
     func panel(_ view: BinPanelView, didOpenItemAt index: Int) {
         guard let bin = store.bin(for: view.bin.id), bin.items.indices.contains(index) else { return }
-        guard let url = bin.items[index].resolvedTargetURL() else {
+        if !openItem(at: index, inBin: bin.id) {
             presentMissingItemAlert(name: bin.items[index].displayName)
-            return
         }
+    }
+
+    /// Opens an item as double-clicking it does (an alias opens what it points at).
+    /// False when its file can't be found.
+    @discardableResult
+    func openItem(at index: Int, inBin id: UUID) -> Bool {
+        guard let bin = store.bin(for: id), bin.items.indices.contains(index),
+              let url = bin.items[index].resolvedTargetURL() else { return false }
         NSWorkspace.shared.open(url)
+        return true
     }
 
     private func presentMissingItemAlert(name: String) {
@@ -555,21 +598,13 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
                 NSWorkspace.shared.activateFileViewerSelecting([url])
             }
             menu.addItem(withActionTitle: "Remove from Bin") { [weak self] in
-                guard let self, var bin = self.store.bin(for: id), bin.items.indices.contains(index) else { return }
-                let removed = bin.items[index]
-                // A file this app moved off the Desktop goes back there as it
-                // leaves the bin. If that fails it stays in the bin, so the
-                // file is never left in ~/Desktop Bins with nothing showing it.
+                guard let self, let removed = self.store.bin(for: id)?.items[safe: index] else { return }
                 do {
-                    try self.release(removed, leaving: id)
+                    try self.removeItem(at: index, fromBin: id)
                 } catch {
-                    NSLog("DesktopBinsWidget: could not return \(removed.displayName) to the Desktop: \(error)")
                     self.presentMoveFailure("Couldn't put “\(removed.displayName)” back on the Desktop",
                                             names: [error.localizedDescription, "", "It is still in the bin."])
-                    return
                 }
-                bin.items.remove(at: index)
-                self.commit(bin)
             }
             menu.addItem(.separator())
         }
@@ -579,9 +614,8 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
             self.panelRequestsToggleCollapse(view)
         }
         let countItem = menu.addItem(withActionTitle: "Show Item Count") { [weak self] in
-            guard let self, var bin = self.store.bin(for: id) else { return }
-            bin.showsItemCount.toggle()
-            self.commit(bin)
+            guard let self, let bin = self.store.bin(for: id) else { return }
+            self.setShowsItemCount(!bin.showsItemCount, forBin: id)
         }
         countItem.state = bin.showsItemCount ? .on : .off
         menu.addItem(withActionTitle: "Rename Bin…") { [weak self] in self?.renameBin(id) }
@@ -592,7 +626,7 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     }
 
     private func renameBin(_ id: UUID) {
-        guard var bin = store.bin(for: id) else { return }
+        guard let bin = store.bin(for: id) else { return }
         let alert = NSAlert()
         alert.messageText = "Rename Bin"
         alert.addButton(withTitle: "Rename")
@@ -603,8 +637,44 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         alert.window.initialFirstResponder = field
         NSApp.activate(ignoringOtherApps: true)
         guard alert.runModal() == .alertFirstButtonReturn else { return }
-        let trimmed = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        renameBin(id, to: field.stringValue)
+    }
+
+    /// Renames a bin, as Rename Bin… does. A blank name keeps the old one.
+    func renameBin(_ id: UUID, to title: String) {
+        guard var bin = store.bin(for: id) else { return }
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         bin.title = trimmed.isEmpty ? bin.title : trimmed
+        commit(bin)
+    }
+
+    /// Gives a bin a new color ("3B82F6"), as Change Color… does.
+    func setColor(_ hex: String, forBin id: UUID) {
+        guard var bin = store.bin(for: id) else { return }
+        bin.colorHex = hex
+        commit(bin)
+    }
+
+    /// Shows or hides the "(n)" after a bin's name, as Show Item Count does.
+    func setShowsItemCount(_ shows: Bool, forBin id: UUID) {
+        guard var bin = store.bin(for: id) else { return }
+        bin.showsItemCount = shows
+        commit(bin)
+    }
+
+    /// Takes an item out of a bin, as Remove from Bin does. A file this app moved off the
+    /// Desktop goes back there as it leaves. If that fails it stays in the bin, so the file
+    /// is never left in ~/Desktop Bins with nothing showing it; the error says why.
+    func removeItem(at index: Int, fromBin id: UUID) throws {
+        guard var bin = store.bin(for: id), bin.items.indices.contains(index) else { return }
+        let removed = bin.items[index]
+        do {
+            try release(removed, leaving: id)
+        } catch {
+            NSLog("DesktopBinsWidget: could not return \(removed.displayName) to the Desktop: \(error)")
+            throw error
+        }
+        bin.items.remove(at: index)
         commit(bin)
     }
 
@@ -623,9 +693,8 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
     }
 
     @objc private func colorPanelChanged(_ sender: NSColorPanel) {
-        guard let id = colorTargetID, var bin = store.bin(for: id) else { return }
-        bin.colorHex = sender.color.hexString
-        commit(bin)
+        guard let id = colorTargetID else { return }
+        setColor(sender.color.hexString, forBin: id)
     }
 
     private func deleteBin(_ id: UUID) {
@@ -640,28 +709,37 @@ final class BinPanelController: NSObject, BinPanelViewDelegate {
         alert.alertStyle = .warning
         NSApp.activate(ignoringOtherApps: true)
         if alert.runModal() == .alertFirstButtonReturn {
-            // Deleting a bin must not leave its files in ~/Desktop Bins with
-            // nothing showing them. Anything that can't go back keeps the bin
-            // alive, holding just those items.
-            guard var doomed = store.bin(for: id) else { return }
-            var stranded: [BinItem] = []
-            for item in doomed.items {
-                do {
-                    try release(item, leaving: id)
-                } catch {
-                    NSLog("DesktopBinsWidget: could not return \(item.displayName) to the Desktop: \(error)")
-                    stranded.append(item)
-                }
-            }
-            if stranded.isEmpty {
-                store.removeBin(id: id)
-            } else {
-                doomed.items = stranded
-                commit(doomed)
+            let stranded = deleteBinReturningFiles(id)
+            if !stranded.isEmpty {
                 presentMoveFailure("Couldn't put everything back on the Desktop",
                                    names: stranded.map(\.displayName) + ["", "The bin was kept, holding just these."])
             }
         }
+    }
+
+    /// Deletes a bin, as Delete Bin does once confirmed. Files it moved off the Desktop go
+    /// back there; nothing is deleted. Deleting a bin must not leave its files in
+    /// ~/Desktop Bins with nothing showing them, so anything that can't go back keeps the
+    /// bin alive, holding just those items. Returns them (empty when the bin is gone).
+    @discardableResult
+    func deleteBinReturningFiles(_ id: UUID) -> [BinItem] {
+        guard var doomed = store.bin(for: id) else { return [] }
+        var stranded: [BinItem] = []
+        for item in doomed.items {
+            do {
+                try release(item, leaving: id)
+            } catch {
+                NSLog("DesktopBinsWidget: could not return \(item.displayName) to the Desktop: \(error)")
+                stranded.append(item)
+            }
+        }
+        if stranded.isEmpty {
+            store.removeBin(id: id)
+        } else {
+            doomed.items = stranded
+            commit(doomed)
+        }
+        return stranded
     }
 }
 

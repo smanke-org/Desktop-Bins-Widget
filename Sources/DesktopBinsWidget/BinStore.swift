@@ -9,7 +9,8 @@ final class BinStore {
 
     init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = appSupport.appendingPathComponent("DesktopBinsWidget", isDirectory: true)
+        // An agent CLI test copy (Debug builds only) keeps its bins in the APP_STORE folder.
+        let dir = AgentSocket.testFolder ?? appSupport.appendingPathComponent("DesktopBinsWidget", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         fileURL = dir.appendingPathComponent("bins.json")
         load()
