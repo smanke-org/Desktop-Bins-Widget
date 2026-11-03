@@ -51,8 +51,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         // Bins
         menu.addItem(withTitle: "New Bin", action: #selector(newBin), keyEquivalent: "n", target: self)
+            .showIcon("plus.square.on.square")
         let visibilityTitle = panelController.isVisible ? "Hide All Bins" : "Show All Bins"
         menu.addItem(withTitle: visibilityTitle, action: #selector(toggleVisibility), keyEquivalent: "", target: self)
+            .showIcon(panelController.isVisible ? "eye.slash" : "eye")
         menu.addItem(.separator())
 
         menu.addItem(submenuTitled: "View", viewMenu())
@@ -63,16 +65,20 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         // prompted for, so an install only ever follows a click the user made.
         if let staged = AutoUpdater.shared.staged {
             menu.addItem(withTitle: "Update to \(staged.version) Now", action: #selector(installStagedUpdate), keyEquivalent: "", target: self)
+                .showIcon("arrow.down.circle")
         } else if let pending = UpdateAvailability.shared.pending {
             let updateItem = menu.addItem(withTitle: "Update to \(pending)…", action: #selector(checkForUpdates), keyEquivalent: "", target: self)
+                .showIcon("arrow.down.circle")
             updateItem.toolTip = "A newer release is available. Downloading and installing it needs your confirmation."
         } else {
             let updateItem = menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "", target: self)
+                .showIcon("arrow.down.circle")
             updateItem.toolTip = "Download and install the latest release from GitHub, then restart."
         }
         menu.addItem(withTitle: "Desktop Bins Widget Help", action: #selector(showHelp), keyEquivalent: "", target: self)
             .image = NSImage(systemSymbolName: "questionmark.circle", accessibilityDescription: nil)
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",", target: self)
+            .showIcon("gearshape")
         menu.addItem(withTitle: "About Desktop Bins Widget", action: #selector(showAbout), keyEquivalent: "", target: self)
         menu.addItem(withTitle: "Our other apps…", action: #selector(showOtherApps), keyEquivalent: "", target: self)
         menu.addItem(.separator())
