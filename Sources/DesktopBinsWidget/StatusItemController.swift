@@ -159,10 +159,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// Always called on the main thread (menu items, the app delegate).
     @objc func showSettings() { MainActor.assumeIsolated { SettingsWindowController.shared.show() } }
     @objc private func quit() { NSApp.terminate(nil) }
-    @objc private func showAbout() {
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.orderFrontStandardAboutPanel(nil)
-    }
+    @MainActor @objc private func showAbout() { AppInfo.showAbout() }
     /// The developer's site, which lists every app.
     @objc private func showOtherApps() {
         if let url = URL(string: "https://stevemanke.com/") { NSWorkspace.shared.open(url) }
