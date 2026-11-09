@@ -62,27 +62,30 @@ cp "Resources/dmg/DS_Store" "${STAGING}/.DS_Store"
 
 echo "Creating ${DMG_PATH}..."
 rm -f "${DMG_PATH}"
-# hdiutil create is deprecated in macOS 27; diskutil image (macOS 26+) is the
-# replacement. It builds an APFS volume from a folder, which every supported
-# macOS (13+) mounts, including older installed updaters that use hdiutil.
-if diskutil image create from --help >/dev/null 2>&1; then
-  diskutil image create from \
-    --format UDZO \
-    --volumeName "${APP_NAME}" \
-    "${STAGING}" \
-    "${DMG_PATH}" >/dev/null
-else
-  hdiutil create \
-    -volname "${APP_NAME}" \
-    -srcfolder "${STAGING}" \
-    -fs HFS+ \
-    -format ULFO \
-    -ov \
-    "${DMG_PATH}" >/dev/null
+# hdiutil, not `diskutil image create from`: on macOS 27 diskutil silently leaves the
+# staging folder's .DS_Store out of the image, so the window layout above never shipped.
+# An APFS volume in LZFSE (ULFO) keeps it; HFS+ zlib images of app folders came out
+# corrupt on macOS 27.0.1. hdiutil prints a deprecation warning; it is harmless.
+hdiutil create -quiet \
+  -srcfolder "${STAGING}" \
+  -volname "${APP_NAME}" \
+  -fs APFS \
+  -format ULFO \
+  "${DMG_PATH}" 2>/dev/null
+# The layout must be in the image: check before anything is signed or published.
+LAYOUT_MOUNT=$(hdiutil attach "${DMG_PATH}" -nobrowse -noautoopen -readonly 2>/dev/null | awk -F'\t' '/\/Volumes\//{print $NF}')
+HAS_LAYOUT=no
+[ -n "${LAYOUT_MOUNT}" ] && [ -f "${LAYOUT_MOUNT}/.DS_Store" ] && HAS_LAYOUT=yes
+[ -n "${LAYOUT_MOUNT}" ] && hdiutil detach "${LAYOUT_MOUNT}" -quiet || true
+if [ -f "Resources/dmg/DS_Store" ] && [ "${HAS_LAYOUT}" != "yes" ]; then
+  echo "The disk image lost its window layout (.DS_Store); not signing or publishing it." >&2
+  exit 1
 fi
-# A corrupt image (hdiutil's zlib images of HFS+ volumes are on macOS 27.0.1) is never
-# signed or published.
-if ! hdiutil imageinfo "${DMG_PATH}" 2>/dev/null | grep -q "Format Description"; then
+# Never sign or publish an unreadable image (hdiutil's zlib images of HFS+ volumes came out
+# corrupt on macOS 27.0.1; this APFS one isn't, but the check costs nothing). No grep -q:
+# under pipefail its early exit reads as a failure.
+INFO=$(hdiutil imageinfo "${DMG_PATH}" 2>/dev/null | grep "Format Description" || true)
+if [ -z "${INFO}" ]; then
   echo "The disk image came out unreadable; not signing or publishing it." >&2
   exit 1
 fi
